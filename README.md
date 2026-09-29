@@ -1,5 +1,9 @@
 # document_formulas
 
+[![crates.io](https://img.shields.io/crates/v/document_formulas.svg)](https://crates.io/crates/document_formulas)
+[![docs.rs](https://img.shields.io/docsrs/document_formulas)](https://docs.rs/document_formulas)
+[![docs (workspace)](https://img.shields.io/badge/docs-rendered-8da0cb)](https://barafael.github.io/document-formulas/)
+
 KaTeX-rendered math formulas in your rustdoc, extracted from function bodies.
 
 Attach `#[formula_doc]` to a function and every formula-shaped expression in
@@ -49,14 +53,19 @@ Anything that cannot be rendered is skipped, so the macro never breaks your buil
 
 Example crates in this repository, with their formulas rendered live:
 
-- [`kalman`](examples/kalman) — scalar 1D Kalman filter
-- [`projectile`](examples/projectile) — ballistics closed forms
-- [`finance`](examples/finance) — compound interest and amortization
+- [`kalman`](examples/kalman) — scalar 1D Kalman filter —
+  [rendered](https://barafael.github.io/document-formulas/kalman/struct.Kalman1D.html)
+- [`projectile`](examples/projectile) — ballistics closed forms —
+  [rendered](https://barafael.github.io/document-formulas/projectile/fn.range.html)
+- [`finance`](examples/finance) — compound interest and amortization —
+  [rendered](https://barafael.github.io/document-formulas/finance/fn.monthly_payment.html)
 
-A rendered deployment: https://barafael.github.io/document-formulas/
+The full workspace documentation is deployed on every push:
+https://barafael.github.io/document-formulas/
 
 ## Notes
 
+- Requires Rust 1.85+ (edition 2024).
 - Viewing the docs requires network access to the KaTeX CDN
   (`cdn.jsdelivr.net`); the docs themselves build offline.
 
