@@ -13,7 +13,7 @@ any further setup.
 
 ```toml
 [dependencies]
-document_formulas = "0.1"
+document_formulas = "0.2"
 ```
 
 ```rust
@@ -59,7 +59,6 @@ A rendered deployment: https://barafael.github.io/document_formulas/
 
 - Viewing the docs requires network access to the KaTeX CDN
   (`cdn.jsdelivr.net`); the docs themselves build offline.
-- Publishing requires `document_formulas_macros` to be on crates.io first.
 
 ## License
 

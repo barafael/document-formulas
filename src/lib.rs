@@ -1,47 +1,94 @@
-//! Procedurally generated math documentation, rendered with KaTeX.
+//! KaTeX-rendered math formulas in your rustdoc, extracted from function
+//! bodies.
 //!
-//! Attach [`formula_doc`] to a function and every formula-shaped expression
-//! in its body (bindings with arithmetic right-hand sides, trailing and
-//! `return` expressions) is lifted into the doc comment as a TeX formula,
-//! rendered in rustdoc by an auto-injected KaTeX loader.
+//! Attach [`formula_doc`] to a function: every formula-shaped expression in
+//! its body — bindings with arithmetic right-hand sides, trailing and
+//! `return` expressions — is lifted into the doc comment as a TeX formula.
 //!
 //! ```
-//! assert_eq!(document_formulas::hypotenuse(3.0, 4.0), 5.0);
+//! use document_formulas::formula_doc;
+//!
+//! #[formula_doc]
+//! fn hypotenuse(a: f64, b: f64) -> f64 {
+//!     let a2 = a.powi(2);
+//!     let b2 = b.powi(2);
+//!     let sum = a2 + b2;
+//!     sum.sqrt()
+//! }
 //! ```
+//!
+//! The generated docs embed a KaTeX loader (CSS + auto-render from a CDN),
+//! so `cargo doc --open` and docs.rs display the formulas without any
+//! further setup.
 
-pub use document_formulas_macros::formula_doc;
+mod extract;
+mod latex;
 
-/// Returns the sum of two unsigned integers.
-#[formula_doc]
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+use proc_macro::{Span, TokenStream};
+use quote::quote;
+use syn::{ItemFn, parse_macro_input};
 
-/// Computes the hypotenuse of a right-angled triangle.
+const KATEX_VERSION: &str = "0.16.22";
+
+/// Documents the math formulas contained in a function body.
 ///
-/// # Examples
-///
-/// ```
-/// assert_eq!(document_formulas::hypotenuse(3.0, 4.0), 5.0);
-/// ```
-#[formula_doc]
-pub fn hypotenuse(a: f64, b: f64) -> f64 {
-    let a2 = a.powi(2);
-    let b2 = b.powi(2);
-    let sum = a2 + b2;
-    sum.sqrt()
-}
-
-/// Solves `a*x^2 + b*x + c = 0` for real roots, if any.
-#[formula_doc]
-pub fn quadratic_roots(a: f64, b: f64, c: f64) -> Option<(f64, f64)> {
-    let disc = b * b - 4.0 * a * c;
-    if disc < 0.0 {
-        return None;
+/// The attribute currently takes no arguments.
+#[proc_macro_attribute]
+pub fn formula_doc(attr: TokenStream, item: TokenStream) -> TokenStream {
+    if !attr.is_empty() {
+        return syn::Error::new(
+            Span::call_site().into(),
+            "#[formula_doc] does not accept any arguments",
+        )
+        .to_compile_error()
+        .into();
     }
-    let root = disc.sqrt();
-    let denom = 2.0 * a;
-    Some(((-b + root) / denom, (-b - root) / denom))
+    let mut func = parse_macro_input!(item as ItemFn);
+
+    let rendered: Vec<String> = extract::extract_formulas(&func)
+        .iter()
+        .filter_map(latex::formula_tex)
+        .collect();
+
+    if !rendered.is_empty() {
+        let doc = build_doc(&rendered);
+        func.attrs.push(syn::parse_quote!(#[doc = #doc]));
+    }
+    quote!(#func).into()
+}
+
+fn build_doc(formulas: &[String]) -> String {
+    let mut doc = String::new();
+    doc.push('\n');
+    doc.push_str(&katex_loader());
+    doc.push_str("\n\n# Formulas\n\n");
+    // The formulas are wrapped in an HTML block so rustdoc passes the TeX
+    // through verbatim; markdown escape processing would otherwise eat the
+    // backslashes in sequences like `\_`.
+    doc.push_str("<div class=\"document-formulas\">\n");
+    for tex in formulas {
+        doc.push_str("$$ ");
+        doc.push_str(tex);
+        doc.push_str(" $$\n");
+    }
+    doc.push_str("</div>\n");
+    doc
+}
+
+fn katex_loader() -> String {
+    format!(
+        concat!(
+            "<link rel=\"stylesheet\" href=\"{cdn}@{v}/dist/katex.min.css\" />\n",
+            "<script defer src=\"{cdn}@{v}/dist/katex.min.js\"></script>\n",
+            "<script defer src=\"{cdn}@{v}/dist/contrib/auto-render.min.js\" ",
+            "onload=\"if (!window.documentFormulasKatexLoaded) {{ window.documentFormulasKatexLoaded = true; ",
+            "renderMathInElement(document.body, {{ delimiters: [",
+            "{{ left: '$$', right: '$$', display: true }}, ",
+            "{{ left: '\\\\(', right: '\\\\)', display: false }}] }}); }}\"></script>\n",
+        ),
+        cdn = "https://cdn.jsdelivr.net/npm/katex",
+        v = KATEX_VERSION,
+    )
 }
 
 #[cfg(test)]
@@ -49,11 +96,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-        assert_eq!(hypotenuse(3.0, 4.0), 5.0);
-        assert!(quadratic_roots(1.0, 0.0, -4.0).is_some());
-        assert!(quadratic_roots(1.0, 0.0, 4.0).is_none());
+    fn doc_wraps_formulas_in_html_block() {
+        let doc = build_doc(&["flight\\_time = v_{0}".to_string()]);
+        assert!(doc.contains("<div class=\"document-formulas\">\n"));
+        assert!(doc.contains("$$ flight\\_time = v_{0} $$\n"));
+        assert!(doc.trim_end().ends_with("</div>"));
+        assert!(doc.contains("katex.min.css"));
     }
 }

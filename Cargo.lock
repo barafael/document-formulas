@@ -4,14 +4,7 @@ version = 4
 
 [[package]]
 name = "document_formulas"
-version = "0.1.0"
-dependencies = [
- "document_formulas_macros",
-]
-
-[[package]]
-name = "document_formulas_macros"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",

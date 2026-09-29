@@ -1,10 +1,10 @@
 [workspace]
-members = ["document_formulas_macros", "examples/*"]
+members = ["examples/*"]
 resolver = "3"
 
 [package]
 name = "document_formulas"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 autoexamples = false
 description = "KaTeX-rendered math formulas in your rustdoc, extracted from function bodies"
@@ -14,5 +14,10 @@ readme = "README.md"
 keywords = ["documentation", "math", "latex", "katex", "proc-macro"]
 categories = ["development-tools", "science", "text-processing"]
 
+[lib]
+proc-macro = true
+
 [dependencies]
-document_formulas_macros = { version = "0.1.0", path = "document_formulas_macros" }
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full"] }
