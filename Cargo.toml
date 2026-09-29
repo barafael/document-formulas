@@ -1,18 +1,18 @@
 [workspace]
-members = ["formularium-macros", "examples/*"]
+members = ["document_formulas_macros", "examples/*"]
 resolver = "3"
 
 [package]
-name = "formularium"
+name = "document_formulas"
 version = "0.1.0"
 edition = "2024"
 autoexamples = false
 description = "KaTeX-rendered math formulas in your rustdoc, extracted from function bodies"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/barafael/formularium"
+repository = "https://github.com/barafael/document_formulas"
 readme = "README.md"
 keywords = ["documentation", "math", "latex", "katex", "proc-macro"]
 categories = ["development-tools", "science", "text-processing"]
 
 [dependencies]
-formularium-macros = { version = "0.1.0", path = "formularium-macros" }
+document_formulas_macros = { version = "0.1.0", path = "document_formulas_macros" }

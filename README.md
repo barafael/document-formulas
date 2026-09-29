@@ -1,4 +1,4 @@
-# formularium
+# document_formulas
 
 KaTeX-rendered math formulas in your rustdoc, extracted from function bodies.
 
@@ -6,18 +6,18 @@ Attach `#[formula_doc]` to a function and every formula-shaped expression in
 its body — bindings with arithmetic right-hand sides, trailing and `return`
 expressions — is lifted into the doc comment as a TeX formula. The attribute
 embeds a KaTeX loader (CSS + auto-render from a CDN), so the formulas render
-in `cargo doc --open` and on [docs.rs](https://docs.rs/formularium) without
+in `cargo doc --open` and on [docs.rs](https://docs.rs/document_formulas) without
 any further setup.
 
 ## Usage
 
 ```toml
 [dependencies]
-formularium = "0.1"
+document_formulas = "0.1"
 ```
 
 ```rust
-use formularium::formula_doc;
+use document_formulas::formula_doc;
 
 /// Computes the hypotenuse of a right-angled triangle.
 #[formula_doc]
@@ -53,13 +53,13 @@ Example crates in this repository, with their formulas rendered live:
 - [`projectile`](examples/projectile) — ballistics closed forms
 - [`finance`](examples/finance) — compound interest and amortization
 
-A rendered deployment: https://barafael.github.io/formularium/
+A rendered deployment: https://barafael.github.io/document_formulas/
 
 ## Notes
 
 - Viewing the docs requires network access to the KaTeX CDN
   (`cdn.jsdelivr.net`); the docs themselves build offline.
-- Publishing requires `formularium-macros` to be on crates.io first.
+- Publishing requires `document_formulas_macros` to be on crates.io first.
 
 ## License
 

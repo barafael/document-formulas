@@ -1,11 +1,11 @@
-//! A scalar (1D) Kalman filter, documented with `formularium`.
+//! A scalar (1D) Kalman filter, documented with `document_formulas`.
 //!
 //! Method bodies are written so the arithmetic mirrors the classic filter
-//! equations one to one; [`formularium::formula_doc`] lifts them into the
+//! equations one to one; [`document_formulas::formula_doc`] lifts them into the
 //! rustdoc output, where KaTeX renders them. Run `cargo doc --open` and
 //! visit the `predict` and `update` methods.
 
-use formularium::formula_doc;
+use document_formulas::formula_doc;
 
 /// A scalar Kalman filter estimating a single noisy signal.
 #[derive(Debug, Clone)]

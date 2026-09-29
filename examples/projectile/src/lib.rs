@@ -1,9 +1,9 @@
-//! Projectile ballistics formulas, documented with `formularium`.
+//! Projectile ballistics formulas, documented with `document_formulas`.
 //!
-//! Each function is a textbook closed-form expression; [`formularium::formula_doc`]
+//! Each function is a textbook closed-form expression; [`document_formulas::formula_doc`]
 //! renders it as KaTeX in the rustdoc output (`cargo doc --open`).
 
-use formularium::formula_doc;
+use document_formulas::formula_doc;
 
 /// Horizontal range of a projectile launched over flat ground.
 ///

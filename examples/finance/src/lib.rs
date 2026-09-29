@@ -1,9 +1,9 @@
-//! Compound-interest and amortization formulas, documented with `formularium`.
+//! Compound-interest and amortization formulas, documented with `document_formulas`.
 //!
-//! [`formularium::formula_doc`] renders each function's arithmetic as KaTeX in
+//! [`document_formulas::formula_doc`] renders each function's arithmetic as KaTeX in
 //! the rustdoc output (`cargo doc --open`).
 
-use formularium::formula_doc;
+use document_formulas::formula_doc;
 
 /// Future value of a lump sum under compound interest.
 ///

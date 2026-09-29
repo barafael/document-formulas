@@ -5,4 +5,4 @@ edition = "2024"
 publish = false
 
 [dependencies]
-formularium = { path = "../.." }
+document_formulas = { path = "../.." }

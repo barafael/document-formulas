@@ -6,10 +6,10 @@
 //! rendered in rustdoc by an auto-injected KaTeX loader.
 //!
 //! ```
-//! assert_eq!(formularium::hypotenuse(3.0, 4.0), 5.0);
+//! assert_eq!(document_formulas::hypotenuse(3.0, 4.0), 5.0);
 //! ```
 
-pub use formularium_macros::formula_doc;
+pub use document_formulas_macros::formula_doc;
 
 /// Returns the sum of two unsigned integers.
 #[formula_doc]
@@ -22,7 +22,7 @@ pub fn add(left: u64, right: u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(formularium::hypotenuse(3.0, 4.0), 5.0);
+/// assert_eq!(document_formulas::hypotenuse(3.0, 4.0), 5.0);
 /// ```
 #[formula_doc]
 pub fn hypotenuse(a: f64, b: f64) -> f64 {

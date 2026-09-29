@@ -3,21 +3,14 @@
 version = 4
 
 [[package]]
-name = "finance"
+name = "document_formulas"
 version = "0.1.0"
 dependencies = [
- "formularium",
+ "document_formulas_macros",
 ]
 
 [[package]]
-name = "formularium"
-version = "0.1.0"
-dependencies = [
- "formularium-macros",
-]
-
-[[package]]
-name = "formularium-macros"
+name = "document_formulas_macros"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
@@ -26,10 +19,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "finance"
+version = "0.1.0"
+dependencies = [
+ "document_formulas",
+]
+
+[[package]]
 name = "kalman"
 version = "0.1.0"
 dependencies = [
- "formularium",
+ "document_formulas",
 ]
 
 [[package]]
@@ -45,7 +45,7 @@ dependencies = [
 name = "projectile"
 version = "0.1.0"
 dependencies = [
- "formularium",
+ "document_formulas",
 ]
 
 [[package]]

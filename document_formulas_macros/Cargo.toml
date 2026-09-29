@@ -1,10 +1,10 @@
 [package]
-name = "formularium-macros"
+name = "document_formulas_macros"
 version = "0.1.0"
 edition = "2024"
-description = "Procedural macros for formularium: document function-body math as KaTeX formulas in rustdoc"
+description = "Procedural macros for document_formulas: document function-body math as KaTeX formulas in rustdoc"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/barafael/formularium"
+repository = "https://github.com/barafael/document_formulas"
 keywords = ["proc-macro", "documentation", "latex", "katex", "rustdoc"]
 categories = ["development-tools"]
 
