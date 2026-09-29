@@ -1,0 +1,12 @@
+[workspace]
+members = ["formularium-macros", "examples/*"]
+resolver = "3"
+
+[package]
+name = "formularium"
+version = "0.1.0"
+edition = "2024"
+autoexamples = false
+
+[dependencies]
+formularium-macros = { version = "0.1.0", path = "formularium-macros" }
