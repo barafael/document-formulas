@@ -7,6 +7,12 @@ name = "formularium"
 version = "0.1.0"
 edition = "2024"
 autoexamples = false
+description = "KaTeX-rendered math formulas in your rustdoc, extracted from function bodies"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/barafael/formularium"
+readme = "README.md"
+keywords = ["documentation", "math", "latex", "katex", "proc-macro"]
+categories = ["development-tools", "science", "text-processing"]
 
 [dependencies]
 formularium-macros = { version = "0.1.0", path = "formularium-macros" }

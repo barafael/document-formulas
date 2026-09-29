@@ -2,6 +2,11 @@
 name = "formularium-macros"
 version = "0.1.0"
 edition = "2024"
+description = "Procedural macros for formularium: document function-body math as KaTeX formulas in rustdoc"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/barafael/formularium"
+keywords = ["proc-macro", "documentation", "latex", "katex", "rustdoc"]
+categories = ["development-tools"]
 
 [lib]
 proc-macro = true
