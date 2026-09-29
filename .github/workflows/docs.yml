@@ -27,6 +27,15 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build documentation
         run: cargo doc --workspace --no-deps
+      - name: Write root redirect
+        run: |-
+          cat > target/doc/index.html <<'EOF'
+          <!DOCTYPE html>
+          <meta charset="utf-8">
+          <title>document_formulas</title>
+          <meta http-equiv="refresh" content="0; url=document_formulas/index.html">
+          <link rel="canonical" href="document_formulas/index.html">
+          EOF
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
