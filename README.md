@@ -49,26 +49,6 @@ The generated documentation renders as:
 
 Anything that cannot be rendered is skipped, so the macro never breaks your build.
 
-## Formulas in doc strings
-
-The attribute also rewrites markers in the doc string itself, in place, using
-the same expression language:
-
-```rust
-/// Years for money to double at a given annual rate (rule of 72).
-///
-/// $$ years = 72.0 / annual_rate $$
-///
-/// ```formula
-/// effective = annual_rate - inflation
-/// ```
-#[formula_doc]
-pub fn doubling_time(annual_rate: f64) -> f64 { /* ... */ }
-```
-
-Each marker becomes a typeset equation exactly where you wrote it. Content
-that does not parse as a Rust expression is left untouched.
-
 ## Examples
 
 Example crates in this repository, with their formulas rendered live:

@@ -16,8 +16,6 @@ pub fn future_value(present: f64, rate: f64, periods: u32) -> f64 {
 }
 
 /// Years for money to double at a given annual rate (rule of 72).
-///
-/// $$ years = 72.0 / annual_rate $$
 #[formula_doc]
 pub fn doubling_time(annual_rate: f64) -> f64 {
     72.0 / annual_rate

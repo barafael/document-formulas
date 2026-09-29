@@ -134,11 +134,6 @@ fn emit_prec(expr: &Expr) -> Option<(String, u8)> {
         Expr::Paren(p) => emit_prec(&p.expr),
         Expr::Group(g) => emit_prec(&g.expr),
         Expr::Cast(c) => emit_prec(&c.expr),
-        Expr::Assign(a) => {
-            let left = emit(&a.left, PREC_ADD)?;
-            let right = emit(&a.right, PREC_ADD)?;
-            Some((format!("{left} = {right}"), PREC_CMP))
-        }
         Expr::MethodCall(m) => method_tex(m),
         Expr::Call(c) => call_tex(c),
         Expr::Field(f) => {
