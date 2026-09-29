@@ -53,7 +53,7 @@ Example crates in this repository, with their formulas rendered live:
 - [`projectile`](examples/projectile) — ballistics closed forms
 - [`finance`](examples/finance) — compound interest and amortization
 
-A rendered deployment: https://barafael.github.io/document_formulas/
+A rendered deployment: https://barafael.github.io/document-formulas/
 
 ## Notes
 
