@@ -42,10 +42,14 @@ The generated documentation renders as:
 ## Supported constructs
 
 - arithmetic: `+`, `-`, `*` (`\cdot`), `/` (`\frac`), `%` (`\bmod`), unary `-`, comparisons
-- common methods: `powi`/`powf` (exponent), `sqrt`, `cbrt`, `abs`, `recip`, `exp`, `ln`, `log`,
-  `log2`, `log10`, trigonometry (`sin`, `atan2`, ...), `hypot`, `min`/`max`, `floor`, `ceil`, `round`
+- common methods: `powi`/`powf` (exponent), `sqrt`, `cbrt`, `abs`, `recip`, `exp`, `ln`, `log`
+  (`x.log(b)` → `\log_b`), `log2`, `log10`, trigonometry (`sin`, `atan2`, ...), `hypot`,
+  `min`/`max`, `floor`, `ceil`, `round`
 - constants: `PI` (`\pi`), `TAU` (`\tau`), `E` (`e`); greek-letter identifiers (`theta` → `\theta`)
-- identifier prettification: trailing digits become subscripts (`a2` → `a₂`)
+- identifier prettification: trailing digits become subscripts (`a2` → `a₂`), composing with
+  greek names (`theta2` → `θ₂`); tuple fields index the same way (`t.0` → `t₀`)
+- literals: suffixes and `_` separators are stripped, scientific notation renders as
+  `1.5e-8` → `1.5 × 10⁻⁸`, non-decimal integers stay upright (`0x10` → `0x10`)
 
 Anything that cannot be rendered is skipped, so the macro never breaks your build.
 
@@ -59,6 +63,8 @@ Example crates in this repository, with their formulas rendered live:
   [rendered](https://barafael.github.io/document-formulas/projectile/fn.range.html)
 - [`finance`](examples/finance) — compound interest and amortization —
   [rendered](https://barafael.github.io/document-formulas/finance/fn.monthly_payment.html)
+- [`fuzz`](examples/fuzz) — ~90-case fuzz corpus for the macro, with
+  per-formula verdicts in [`JUDGEMENT.md`](examples/fuzz/JUDGEMENT.md)
 
 The full workspace documentation is deployed on every push:
 https://barafael.github.io/document-formulas/

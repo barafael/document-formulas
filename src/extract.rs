@@ -1,12 +1,16 @@
 //! Extraction of formula-shaped expressions from function bodies.
+//!
+//! A candidate lifts only when it is formula-shaped (arithmetic or known
+//! math calls) *and* renders, so the docs can never advertise a formula
+//! that silently vanishes.
 
 use syn::{Expr, ItemFn, Pat, Stmt};
 
-use crate::latex::is_math_like;
+use crate::latex;
 
 pub struct Formula {
     pub name: Option<String>,
-    pub expr: Expr,
+    pub tex: String,
 }
 
 pub fn extract_formulas(func: &ItemFn) -> Vec<Formula> {
@@ -23,28 +27,29 @@ pub fn extract_formulas(func: &ItemFn) -> Vec<Formula> {
                 let Pat::Ident(binding) = &local.pat else {
                     continue;
                 };
-                if is_math_like(&init.expr) {
+                if latex::is_math_like(&init.expr)
+                    && let Some(tex) = latex::to_tex(&init.expr)
+                {
                     formulas.push(Formula {
                         name: Some(binding.ident.to_string()),
-                        expr: (*init.expr).clone(),
+                        tex,
                     });
                 }
             }
             Stmt::Expr(Expr::Return(ret), _) => {
                 if let Some(expr) = &ret.expr
-                    && is_math_like(expr)
+                    && latex::is_math_like(expr)
+                    && let Some(tex) = latex::to_tex(expr)
                 {
-                    formulas.push(Formula {
-                        name: None,
-                        expr: (**expr).clone(),
-                    });
+                    formulas.push(Formula { name: None, tex });
                 }
             }
-            Stmt::Expr(expr, _) if is_math_like(expr) => {
-                formulas.push(Formula {
-                    name: None,
-                    expr: expr.clone(),
-                });
+            Stmt::Expr(expr, _) => {
+                if latex::is_math_like(expr)
+                    && let Some(tex) = latex::to_tex(expr)
+                {
+                    formulas.push(Formula { name: None, tex });
+                }
             }
             _ => {}
         }
@@ -65,7 +70,9 @@ mod tests {
         let fs = formulas_of("fn f(a: f64, b: f64) -> f64 { let c = a + b; c * 2.0 }");
         assert_eq!(fs.len(), 2);
         assert_eq!(fs[0].name.as_deref(), Some("c"));
+        assert_eq!(fs[0].tex, "a + b");
         assert_eq!(fs[1].name, None);
+        assert_eq!(fs[1].tex, "c \\cdot 2.0");
     }
 
     #[test]
@@ -79,6 +86,19 @@ mod tests {
             }"#,
         );
         assert!(fs.is_empty());
+    }
+
+    #[test]
+    fn skips_unrenderable_arithmetic() {
+        let fs = formulas_of("fn f(s: &str) -> usize { s.len() + 1 }");
+        assert!(fs.is_empty());
+    }
+
+    #[test]
+    fn extracts_tuple_fields() {
+        let fs = formulas_of("fn f(t: (f64, f64)) -> f64 { t.0 + t.1 }");
+        assert_eq!(fs.len(), 1);
+        assert_eq!(fs[0].tex, "t_{0} + t_{1}");
     }
 
     #[test]

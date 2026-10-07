@@ -24,6 +24,9 @@
 mod extract;
 mod latex;
 
+#[cfg(test)]
+mod fuzz_report;
+
 use proc_macro::{Span, TokenStream};
 use quote::quote;
 use syn::{ItemFn, parse_macro_input};
@@ -47,7 +50,7 @@ pub fn formula_doc(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let rendered: Vec<String> = extract::extract_formulas(&func)
         .iter()
-        .filter_map(latex::formula_tex)
+        .map(latex::formula_tex)
         .collect();
 
     if !rendered.is_empty() {

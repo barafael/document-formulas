@@ -30,8 +30,10 @@ const GREEK: &[(&str, &str)] = &[
     ("mu", "\\mu"),
     ("nu", "\\nu"),
     ("xi", "\\xi"),
+    ("pi", "\\pi"),
     ("rho", "\\rho"),
     ("sigma", "\\sigma"),
+    ("tau", "\\tau"),
     ("upsilon", "\\upsilon"),
     ("phi", "\\phi"),
     ("chi", "\\chi"),
@@ -53,13 +55,12 @@ const FREE_MATH_FNS: &[&str] = &[
     "pow", "atan2", "hypot", "min", "max",
 ];
 
-/// Renders a full `name = expr` formula line, or `None` if unrenderable.
-pub fn formula_tex(formula: &Formula) -> Option<String> {
-    let tex = to_tex(&formula.expr)?;
-    Some(match &formula.name {
-        Some(name) => format!("{} = {}", ident_tex(name), tex),
-        None => tex,
-    })
+/// Formats a full `name = expr` formula line.
+pub fn formula_tex(formula: &Formula) -> String {
+    match &formula.name {
+        Some(name) => format!("{} = {}", ident_tex(name), formula.tex),
+        None => formula.tex.clone(),
+    }
 }
 
 /// Converts an expression to TeX, or `None` if it contains unrenderable parts.
@@ -67,7 +68,8 @@ pub fn to_tex(expr: &Expr) -> Option<String> {
     emit(expr, PREC_CMP)
 }
 
-/// True if the expression contains arithmetic operators or known math calls.
+/// True if the expression contains arithmetic operators or known math calls;
+/// the shape gate deciding whether an expression is formula material at all.
 pub fn is_math_like(expr: &Expr) -> bool {
     match expr {
         Expr::Binary(b) => {
@@ -137,14 +139,16 @@ fn emit_prec(expr: &Expr) -> Option<(String, u8)> {
         Expr::MethodCall(m) => method_tex(m),
         Expr::Call(c) => call_tex(c),
         Expr::Field(f) => {
-            let Member::Named(name) = &f.member else {
-                return None;
-            };
             let base = emit(&f.base, PREC_POSTFIX)?;
-            Some((
-                format!("{base}.{}", ident_tex(&name.to_string())),
-                PREC_POSTFIX,
-            ))
+            match &f.member {
+                Member::Named(name) => Some((
+                    format!("{base}.{}", ident_tex(&name.to_string())),
+                    PREC_POSTFIX,
+                )),
+                Member::Unnamed(index) => {
+                    Some((format!("{base}_{{{}}}", index.index), PREC_POSTFIX))
+                }
+            }
         }
         Expr::Index(i) => {
             let base = emit(&i.expr, PREC_POSTFIX)?;
@@ -165,8 +169,8 @@ fn bin_tex(b: &ExprBinary) -> Option<(String, u8)> {
         BinOp::Sub(_) => (" - ", PREC_ADD, PREC_ADD, PREC_MUL),
         BinOp::Mul(_) => (" \\cdot ", PREC_MUL, PREC_MUL, PREC_UNARY),
         BinOp::Div(_) => {
-            let num = emit(&b.left, 0)?;
-            let den = emit(&b.right, 0)?;
+            let num = strip_redundant_parens(&emit(&b.left, 0)?);
+            let den = strip_redundant_parens(&emit(&b.right, 0)?);
             return Some((format!("\\frac{{{num}}}{{{den}}}"), PREC_POSTFIX));
         }
         BinOp::Rem(_) => (" \\bmod ", PREC_MUL, PREC_UNARY, PREC_UNARY),
@@ -188,7 +192,7 @@ fn method_tex(m: &ExprMethodCall) -> Option<(String, u8)> {
     if !is_math_method(&name) || m.turbofish.is_some() {
         return None;
     }
-    let mut ops = vec![emit(&m.receiver, PREC_POSTFIX)?];
+    let mut ops = vec![strip_redundant_parens(&emit(&m.receiver, PREC_POSTFIX)?)];
     for arg in &m.args {
         ops.push(emit(arg, 0)?);
     }
@@ -215,76 +219,121 @@ fn math_tex(name: &str, ops: &[String]) -> Option<(String, u8)> {
         let [x] = ops else {
             return None;
         };
-        return Some((format!("{t}\\left({x}\\right)"), PREC_POSTFIX));
+        return Some((
+            format!("{t}\\left({}\\right)", strip_redundant_parens(x)),
+            PREC_POSTFIX,
+        ));
     }
     match name {
         "powi" | "powf" | "pow" => {
             let [x, y] = ops else {
                 return None;
             };
-            let base = wrap_scripted(&wrap_composite(x));
-            Some((format!("{base}^{{{y}}}"), PREC_POSTFIX))
+            Some((
+                format!("{}^{{{}}}", scripted_operand(x), strip_redundant_parens(y)),
+                PREC_POSTFIX,
+            ))
         }
         "sqrt" => {
             let [x] = ops else {
                 return None;
             };
-            Some((format!("\\sqrt{{{x}}}"), PREC_POSTFIX))
+            Some((
+                format!("\\sqrt{{{}}}", strip_redundant_parens(x)),
+                PREC_POSTFIX,
+            ))
         }
         "cbrt" => {
             let [x] = ops else {
                 return None;
             };
-            Some((format!("\\sqrt[3]{{{x}}}"), PREC_POSTFIX))
+            Some((
+                format!("\\sqrt[3]{{{}}}", strip_redundant_parens(x)),
+                PREC_POSTFIX,
+            ))
         }
         "abs" => {
             let [x] = ops else {
                 return None;
             };
-            Some((format!("\\left|{x}\\right|"), PREC_POSTFIX))
+            Some((
+                format!("\\left|{}\\right|", strip_redundant_parens(x)),
+                PREC_POSTFIX,
+            ))
         }
         "recip" => {
             let [x] = ops else {
                 return None;
             };
-            Some((format!("\\frac{{1}}{{{x}}}"), PREC_POSTFIX))
+            Some((
+                format!("\\frac{{1}}{{{}}}", strip_redundant_parens(x)),
+                PREC_POSTFIX,
+            ))
         }
         "exp" => {
             let [x] = ops else {
                 return None;
             };
-            Some((format!("e^{{{x}}}"), PREC_POSTFIX))
+            Some((format!("e^{{{}}}", strip_redundant_parens(x)), PREC_POSTFIX))
         }
-        "ln" | "log" | "log2" | "log10" => {
+        "ln" | "log2" | "log10" => {
             let [x] = ops else {
                 return None;
             };
             let head = match name {
                 "ln" => "\\ln",
-                "log" => "\\log",
                 "log2" => "\\log_{2}",
                 _ => "\\log_{10}",
             };
-            Some((format!("{head}\\left({x}\\right)"), PREC_POSTFIX))
+            Some((
+                format!("{head}\\left({}\\right)", strip_redundant_parens(x)),
+                PREC_POSTFIX,
+            ))
         }
+        "log" => match ops {
+            [x] => Some((
+                format!("\\log\\left({}\\right)", strip_redundant_parens(x)),
+                PREC_POSTFIX,
+            )),
+            [x, base] => Some((
+                format!(
+                    "\\log_{{{base}}}\\left({}\\right)",
+                    strip_redundant_parens(x)
+                ),
+                PREC_POSTFIX,
+            )),
+            _ => None,
+        },
         "floor" => {
             let [x] = ops else {
                 return None;
             };
-            Some((format!("\\left\\lfloor {x}\\right\\rfloor"), PREC_POSTFIX))
+            Some((
+                format!(
+                    "\\left\\lfloor {}\\right\\rfloor",
+                    strip_redundant_parens(x)
+                ),
+                PREC_POSTFIX,
+            ))
         }
         "ceil" => {
             let [x] = ops else {
                 return None;
             };
-            Some((format!("\\left\\lceil {x}\\right\\rceil"), PREC_POSTFIX))
+            Some((
+                format!("\\left\\lceil {}\\right\\rceil", strip_redundant_parens(x)),
+                PREC_POSTFIX,
+            ))
         }
         "round" => {
             let [x] = ops else {
                 return None;
             };
             Some((
-                format!("\\operatorname{{round}}\\left({x}\\right)"),
+                format!(
+                    "\\operatorname{{round}}\\left({}\\right)",
+                    strip_redundant_parens(x)
+                ),
                 PREC_POSTFIX,
             ))
         }
@@ -293,7 +342,11 @@ fn math_tex(name: &str, ops: &[String]) -> Option<(String, u8)> {
                 return None;
             };
             Some((
-                format!("\\operatorname{{atan2}}\\left({x}, {y}\\right)"),
+                format!(
+                    "\\operatorname{{atan2}}\\left({}, {}\\right)",
+                    strip_redundant_parens(x),
+                    strip_redundant_parens(y)
+                ),
                 PREC_POSTFIX,
             ))
         }
@@ -304,8 +357,8 @@ fn math_tex(name: &str, ops: &[String]) -> Option<(String, u8)> {
             Some((
                 format!(
                     "\\sqrt{{{}^{{2}} + {}^{{2}}}}",
-                    wrap_scripted(&wrap_composite(x)),
-                    wrap_scripted(&wrap_composite(y))
+                    scripted_operand(x),
+                    scripted_operand(y)
                 ),
                 PREC_POSTFIX,
             ))
@@ -314,7 +367,14 @@ fn math_tex(name: &str, ops: &[String]) -> Option<(String, u8)> {
             let [x, y] = ops else {
                 return None;
             };
-            Some((format!("\\{name}\\left({x}, {y}\\right)"), PREC_POSTFIX))
+            Some((
+                format!(
+                    "\\{name}\\left({}, {}\\right)",
+                    strip_redundant_parens(x),
+                    strip_redundant_parens(y)
+                ),
+                PREC_POSTFIX,
+            ))
         }
         _ => None,
     }
@@ -338,13 +398,14 @@ fn trig_name(name: &str) -> Option<&'static str> {
     })
 }
 
-/// Composite operands (containing binary operators) need parens when
-/// spliced under a superscript, unless already parenthesized.
-fn wrap_composite(operand: &str) -> String {
-    if operand.contains(' ') && !is_parenthesized(operand) {
-        format!("({operand})")
+/// Strips a redundant outer parenthesis group; slots that already delimit
+/// their contents (`\sqrt{}`, `\frac{}{}`, `^{}`, `\left(\right)`) do not
+/// need another layer.
+fn strip_redundant_parens(s: &str) -> String {
+    if is_parenthesized(s) {
+        s[1..s.len() - 1].to_string()
     } else {
-        operand.to_string()
+        s.to_string()
     }
 }
 
@@ -369,12 +430,21 @@ fn is_parenthesized(s: &str) -> bool {
     depth == 1
 }
 
-/// Bases that already carry a superscript need braces before taking another.
-fn wrap_scripted(base: &str) -> String {
-    if base.contains('^') {
-        format!("{{{base}}}")
+/// Adapts an operand for a trailing superscript: parenthesized groups and
+/// plain atoms pass through, `\frac`/`\sqrt` atoms get braced, and operands
+/// that already carry a superscript or consist of several parts get wrapped
+/// in an explicit group.
+fn scripted_operand(s: &str) -> String {
+    if is_parenthesized(s) {
+        s.to_string()
+    } else if s.contains('^') {
+        format!("\\left({s}\\right)")
+    } else if s.starts_with("\\frac") || s.starts_with("\\sqrt") {
+        format!("{{{s}}}")
+    } else if s.contains(' ') {
+        format!("({s})")
     } else {
-        base.to_string()
+        s.to_string()
     }
 }
 
@@ -391,7 +461,7 @@ fn path_tex(path: &Path) -> Option<(String, u8)> {
     Some((ident_tex(&name), PREC_ATOM))
 }
 
-fn ident_tex(name: &str) -> String {
+pub fn ident_tex(name: &str) -> String {
     if let Some((_, tex)) = CONSTANTS.iter().find(|(n, _)| *n == name) {
         return (*tex).to_string();
     }
@@ -403,7 +473,11 @@ fn ident_tex(name: &str) -> String {
     }
     let base = name.trim_end_matches(|c: char| c.is_ascii_digit());
     if !base.is_empty() && base.len() != name.len() {
-        return format!("{base}_{{{}}}", &name[base.len()..]);
+        let digits = &name[base.len()..];
+        if let Some((_, tex)) = GREEK.iter().find(|(n, _)| *n == base) {
+            return format!("{tex}_{{{digits}}}");
+        }
+        return format!("{base}_{{{digits}}}");
     }
     name.to_string()
 }
@@ -433,7 +507,27 @@ fn strip_num(literal: String) -> String {
             break;
         }
     }
+    if s.starts_with("0x") || s.starts_with("0o") || s.starts_with("0b") {
+        return format!("\\mathtt{{{s}}}");
+    }
+    if let Some((mantissa, exponent)) = split_exponent(&s) {
+        return format!("{mantissa} \\times 10^{{{exponent}}}");
+    }
     s
+}
+
+/// Splits a decimal literal into mantissa and exponent if it uses scientific
+/// notation (`1.5e-8`, `3E+4`).
+fn split_exponent(s: &str) -> Option<(&str, &str)> {
+    let pos = s.find(['e', 'E'])?;
+    let (mantissa, rest) = (&s[..pos], &s[pos + 1..]);
+    let exponent = rest.strip_prefix('+').unwrap_or(rest);
+    let digits = exponent.strip_prefix('-').unwrap_or(exponent);
+    if !mantissa.is_empty() && !digits.is_empty() && digits.chars().all(|c| c.is_ascii_digit()) {
+        Some((mantissa, exponent))
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
@@ -500,10 +594,108 @@ mod tests {
             Some(r"\sqrt{a^{2} + (b + c)^{2}}")
         );
         assert_eq!(tex("pow(a + b, 2)").as_deref(), Some("(a + b)^{2}"));
-        assert_eq!(tex("a.powi(2).powi(3)").as_deref(), Some("{a^{2}}^{3}"));
+        assert_eq!(
+            tex("a.powi(2).powi(3)").as_deref(),
+            Some(r"\left(a^{2}\right)^{3}")
+        );
         assert_eq!(
             tex("(-b + root) / two_a").as_deref(),
             Some(r"\frac{-b + root}{two\_a}")
+        );
+    }
+
+    #[test]
+    fn logarithm_with_base() {
+        assert_eq!(
+            tex("x.log(2.0)").as_deref(),
+            Some(r"\log_{2.0}\left(x\right)")
+        );
+        assert_eq!(
+            tex("x.log(b + 1.0)").as_deref(),
+            Some(r"\log_{b + 1.0}\left(x\right)")
+        );
+        assert_eq!(tex("log(x)").as_deref(), Some(r"\log\left(x\right)"));
+        assert_eq!(
+            tex("log(x, 2.0)").as_deref(),
+            Some(r"\log_{2.0}\left(x\right)")
+        );
+    }
+
+    #[test]
+    fn tuple_fields_render_as_subscripts() {
+        assert_eq!(tex("t.0 + t.1").as_deref(), Some("t_{0} + t_{1}"));
+        assert_eq!(tex("m.12 * scale").as_deref(), Some(r"m_{12} \cdot scale"));
+    }
+
+    #[test]
+    fn literal_forms() {
+        assert_eq!(
+            tex("1.5e-8 * a").as_deref(),
+            Some(r"1.5 \times 10^{-8} \cdot a")
+        );
+        assert_eq!(tex("1e3 * a").as_deref(), Some(r"1 \times 10^{3} \cdot a"));
+        assert_eq!(tex("3E+4 + a").as_deref(), Some(r"3 \times 10^{4} + a"));
+        assert_eq!(
+            tex("0x10 as f64 * a").as_deref(),
+            Some(r"\mathtt{0x10} \cdot a")
+        );
+        assert_eq!(
+            tex("0b1010 as f64 * a").as_deref(),
+            Some(r"\mathtt{0b1010} \cdot a")
+        );
+        assert_eq!(
+            tex("0o17 as f64 * a").as_deref(),
+            Some(r"\mathtt{0o17} \cdot a")
+        );
+    }
+
+    #[test]
+    fn greek_composes_with_subscripts() {
+        assert_eq!(tex("theta2 + 1.0").as_deref(), Some(r"\theta_{2} + 1.0"));
+        assert_eq!(
+            tex("lambda1 * lambda2").as_deref(),
+            Some(r"\lambda_{1} \cdot \lambda_{2}")
+        );
+        assert_eq!(tex("pi * 2.0").as_deref(), Some(r"\pi \cdot 2.0"));
+        assert_eq!(tex("tau * 2.0").as_deref(), Some(r"\tau \cdot 2.0"));
+        assert_eq!(
+            tex("two_a + 1").as_deref(),
+            Some(r"two\_a + 1"),
+            "underscored names keep escaping and gain no subscript"
+        );
+    }
+
+    #[test]
+    fn paren_hygiene() {
+        assert_eq!(tex("(a + b).sqrt()").as_deref(), Some(r"\sqrt{a + b}"));
+        assert_eq!(
+            tex("(a + b).ln()").as_deref(),
+            Some(r"\ln\left(a + b\right)")
+        );
+        assert_eq!(tex("(-a).abs()").as_deref(), Some(r"\left|-a\right|"));
+        assert_eq!(tex("(-b).exp()").as_deref(), Some("e^{-b}"));
+        assert_eq!(tex("(a + b).exp()").as_deref(), Some("e^{a + b}"));
+        assert_eq!(tex("(a + b).recip()").as_deref(), Some(r"\frac{1}{a + b}"));
+        assert_eq!(
+            tex("(2.0 * theta).sin()").as_deref(),
+            Some(r"\sin\left(2.0 \cdot \theta\right)")
+        );
+        assert_eq!(
+            tex("(1.0 - p).log2()").as_deref(),
+            Some(r"\log_{2}\left(1.0 - p\right)")
+        );
+    }
+
+    #[test]
+    fn exponents_brace_frac_and_sqrt_bases() {
+        assert_eq!(
+            tex("(a / b).powi(2)").as_deref(),
+            Some(r"{\frac{a}{b}}^{2}")
+        );
+        assert_eq!(tex("sqrt(a).powi(2)").as_deref(), Some(r"{\sqrt{a}}^{2}"));
+        assert_eq!(
+            tex("a.hypot(b.hypot(c))").as_deref(),
+            Some(r"\sqrt{a^{2} + \left(\sqrt{b^{2} + c^{2}}\right)^{2}}")
         );
     }
 
@@ -512,5 +704,6 @@ mod tests {
         assert_eq!(tex("s.len()"), None);
         assert_eq!(tex("foo(a) + 1.0"), None);
         assert_eq!(tex("\"a string\""), None);
+        assert_eq!(tex("s.len() + 1"), None);
     }
 }

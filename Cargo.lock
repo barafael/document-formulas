@@ -19,6 +19,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuzz"
+version = "0.1.0"
+dependencies = [
+ "document_formulas",
+]
+
+[[package]]
 name = "kalman"
 version = "0.1.0"
 dependencies = [
