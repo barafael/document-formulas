@@ -6,7 +6,6 @@ version = 4
 name = "document_formulas"
 version = "0.2.0"
 dependencies = [
- "proc-macro2",
  "quote",
  "syn",
 ]
@@ -59,9 +58,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.119"
+version = "3.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297"
+checksum = "01016da373cd8f7ef12624f796309f5c31ba8d646dd08856c02cd741d823c622"
 dependencies = [
  "proc-macro2",
  "quote",
